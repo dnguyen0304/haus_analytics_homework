@@ -181,3 +181,15 @@ class TestServer:
 
         with pytest.raises(KeyError):
             self.server.rollback_transaction(txn_id)
+
+
+class TestIntegration:
+
+    def test_committed(self):
+        pass
+
+    def test_aborted(self):
+        pass
+
+    def test_failed(self):
+        pass

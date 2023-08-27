@@ -54,8 +54,7 @@ class Transaction:
         self.created_at = (
             created_at
             if created_at is not None
-            else _get_now_in_seconds()
-        )
+            else _get_now_in_seconds())
         self.state = state
 
     def has_inserted(self, curr_created_at: float) -> bool:
@@ -96,11 +95,14 @@ class Server:
 
     def __init__(
         self,
-        database: collections.defaultdict[str, List[Record]],
+        database: Optional[collections.defaultdict[str, List[Record]]] = None,
         transactions: Optional[Dict[float, Transaction]] = None,
         _get_now_in_seconds: Callable[[], float] = _get_now_in_seconds,
     ):
-        self._database = database
+        self._database = (
+            database
+            if database is not None
+            else collections.defaultdict(list))
         self._transactions = transactions if transactions is not None else {}
         self._get_now_in_seconds = _get_now_in_seconds
 
