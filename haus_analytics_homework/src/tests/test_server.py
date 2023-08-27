@@ -137,3 +137,14 @@ class TestServer:
 
         with pytest.raises(KeyError):
             self.server.delete(key)
+
+    def test_start_transaction(self):
+        created_at = 12345.0
+        _get_now_in_seconds = lambda: created_at
+        server = server_lib.Server(
+            database=collections.defaultdict(list),
+            _get_now_in_seconds=_get_now_in_seconds)
+
+        txn_id = server.start_transaction()
+
+        assert txn_id == created_at

@@ -150,3 +150,10 @@ class Server:
             transaction_max=txn.created_at,
         )
         self._database[key].append(record)
+
+    def start_transaction(self) -> float:
+        txn = Transaction(
+            created_at=self._get_now_in_seconds(),
+            state=TransactionState.ACTIVE)
+        self._transactions[txn.created_at] = txn
+        return txn.created_at
