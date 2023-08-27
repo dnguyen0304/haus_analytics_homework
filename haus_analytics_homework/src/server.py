@@ -133,7 +133,7 @@ class Server:
         key: str,
         value: str,
         *,
-        txn_id: Optional[float] = None,
+        txn_id: float,
     ):
         # insert
         # TODO(duy): Change to Record.for_insert.
