@@ -51,9 +51,9 @@ class TestTransaction:
             'committed_greater_than',
         ],
     )
-    def test_is_visible(self, state, curr_created_at, expected):
+    def test_is_visible_to(self, state, curr_created_at, expected):
         transaction = server_lib.Transaction(created_at=5, state=state)
-        assert transaction.is_visible(curr_created_at) is expected
+        assert transaction.is_visible_to(curr_created_at) is expected
 
 
 class TestServer:
