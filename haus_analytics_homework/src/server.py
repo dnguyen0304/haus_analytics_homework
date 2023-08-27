@@ -255,15 +255,14 @@ class WebServer:
         self.server = server if server else Server()
         self.server.put('intro', 'Hello, World!')
 
-    def handler(self, client_socket, client_address):
+    async def handler(self, reader, writer):
+        request = None
         session = {
             'txn_id': None,
         }
 
-        while True:
-            raw_data = client_socket.recv(1024)
-            if not raw_data:
-                break
+        while request != 'quit':
+            raw_data = await reader.read(1024)
             decoded = raw_data.decode(self.ENCODING)
             request = self.parse(decoded)
             session['output'] = {}
@@ -291,7 +290,9 @@ class WebServer:
 
             stringified = json.dumps(session['output'], indent=2) + '\n'
             encoded = stringified.encode(self.ENCODING)
-            client_socket.send(encoded)
+            writer.write(encoded)
+            await writer.drain()
+        writer.close()
 
     def do_get(self, session, request):
         result = self.server.get(request.key, txn_id=session['txn_id'])
@@ -358,19 +359,13 @@ def main_blocking():
             web_server.handler(client_socket, client_address)
 
 
-async def handler(reader, writer):
-    request = None
-    while request != 'quit':
-        raw_data = await reader.read(1024)
-        decoded = raw_data.decode('utf-8')
-        response = 'you sent ' + decoded.rstrip('\n') + '\n'
-        writer.write(response.encode('utf-8'))
-        await writer.drain()
-    writer.close()
-
-
 async def main():
-    server = await asyncio.start_server(handler, 'localhost', 5000)
+    web_server = WebServer()
+
+    host = 'localhost'
+    port = 5000
+
+    server = await asyncio.start_server(web_server.handler, host, port)
     async with server:
         await server.serve_forever()
 
