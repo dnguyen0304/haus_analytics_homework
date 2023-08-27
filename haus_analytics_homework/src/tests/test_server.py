@@ -5,7 +5,7 @@ import pytest
 from .. import server as server_lib
 
 EXISTING_KEY: str = 'exist'
-EXISTING_VALUE: str = ''
+EXISTING_VALUE: str = 'found'
 EXISTING_RECORD: server_lib.Record = server_lib.Record(
     data=EXISTING_VALUE,
     transaction_min=0,
@@ -79,8 +79,15 @@ class TestServer:
 
     def test_delete(self):
         key = EXISTING_KEY
+        value = EXISTING_VALUE
 
-        self.server.delete(EXISTING_KEY)
+        self.server.put(key, value)
+        self.server.delete(key)
+
+        assert self.server.get(key) is None
+
+    def test_delete_not_found(self):
+        key = 'not_found'
 
         with pytest.raises(KeyError):
-            self.server.get(key)
+            self.server.delete(key)

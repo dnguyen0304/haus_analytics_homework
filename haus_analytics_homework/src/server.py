@@ -78,16 +78,24 @@ class Server:
         self._get_now_in_seconds = _get_now_in_seconds
 
     def get(self, key: str, txn: Optional[Transaction] = None) -> Optional[str]:
+        record = self._get_record(key, txn)
+        return record.data if record else None
+
+    def _get_record(
+        self,
+        key: str,
+        txn: Optional[Transaction] = None,
+    ) -> Optional[Record]:
         if not self._database[key]:
             return None
         created_at = txn.created_at if txn is not None else float('inf')
         for record in reversed(self._database[key]):
-            record_txn = self._transactions[record.transaction_min]
-            if record_txn.state != TransactionState.COMMITTED:
+            insert_txn = self._transactions[record.transaction_min]
+            if insert_txn.state != TransactionState.COMMITTED:
                 continue
             if record.transaction_min > created_at:
                 continue
-            return record.data
+            return record
         return None
 
     def put(
