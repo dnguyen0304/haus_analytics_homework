@@ -4,10 +4,10 @@ import pytest
 
 from .. import server as server_lib
 
-EXISTING_KEY: str = 'exist'
-EXISTING_VALUE: str = 'found'
+FOUND_KEY: str = 'found_key'
+FOUND_VALUE: str = 'found_value'
 EXISTING_RECORD: server_lib.Record = server_lib.Record(
-    data=EXISTING_VALUE,
+    data=FOUND_VALUE,
     transaction_min=0,
     transaction_max=0,
 )
@@ -90,16 +90,16 @@ class TestServer:
             database=collections.defaultdict(list),
             _get_now_in_seconds=_get_now_in_seconds)
 
-    def test_get_does_not_exist(self):
-        key = 'does_not_exist'
+    def test_get_not_found(self):
+        key = 'does_not_found'
 
         assert self.server.get(key) is None
 
-    def test_get_exist(self):
-        key = EXISTING_KEY
-        value = EXISTING_VALUE
+    def test_get_found(self):
+        key = FOUND_KEY
+        value = FOUND_VALUE
 
-        self.server.put(EXISTING_KEY, EXISTING_VALUE)
+        self.server.put(FOUND_KEY, FOUND_VALUE)
 
         assert self.server.get(key) == value
 
@@ -117,8 +117,8 @@ class TestServer:
         assert txn.created_at == created_at
         assert txn.state == server_lib.TransactionState.COMMITTED
 
-    def test_put_key_exist(self):
-        key = EXISTING_KEY
+    def test_put_key_update(self):
+        key = FOUND_KEY
         new_value = 'bar'
 
         self.server.put(key, new_value)
@@ -126,8 +126,8 @@ class TestServer:
         assert self.server.get(key) == new_value
 
     def test_delete(self):
-        key = EXISTING_KEY
-        value = EXISTING_VALUE
+        key = FOUND_KEY
+        value = FOUND_VALUE
 
         self.server.put(key, value)
         self.server.delete(key)
