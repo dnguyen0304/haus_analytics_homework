@@ -170,23 +170,55 @@ class TestIntegration:
         alice = server.start_transaction()
         server.put(key, value, txn_id=alice)
 
-        # Other users cannot see uncommitted writes.
-        bob_record = server.get_record(key)
+        # Other users cannot see uncommitted inserts.
+        bob = server.start_transaction()
+        bob_record = server.get_record(key, txn_id=bob)
         assert bob_record is None
 
-        # User can see their own uncommitted writes.
+        # User can see their own uncommitted inserts.
         alice_record = server.get_record(key, txn_id=alice)
         assert alice_record is not None
         assert alice_record.value == value
         assert alice_record.transaction_min == alice
 
-        # All users can see committed writes.
+        # All users can see committed inserts.
         server.commit_transaction(txn_id=alice)
 
         record = server.get_record(key)
         assert record is not None
         assert record.value == value
         assert record.transaction_min == alice
+
+    def test_update(self):
+        server = server_lib.Server()
+        key = 'name'
+        value = 'alice'
+
+        server.put(key, value)
+
+        # All users can see committed writes.
+        record = server.get_record(key)
+        assert record is not None
+        assert record.value == value
+
+        # User can see their own uncommitted deletes.
+        alice = server.start_transaction()
+        server.delete(key, txn_id=alice)
+
+        alice_record = server.get_record(key, txn_id=alice)
+        assert alice_record is None
+
+        # Other users cannot see uncommitted deletes.
+        bob = server.start_transaction()
+        bob_record = server.get_record(key, txn_id=bob)
+        assert bob_record is not None
+        assert bob_record.value == value
+
+        # All users can see committed deletes.
+        server.commit_transaction(txn_id=alice)
+
+        record = server.get_record(key)
+        assert record is None
 
     def test_aborted(self):
         pass
