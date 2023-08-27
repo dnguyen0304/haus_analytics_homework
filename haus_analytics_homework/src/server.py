@@ -83,14 +83,14 @@ class Server:
         self,
         key: str,
         value: str,
-        transaction: Optional[Transaction] = None,
+        txn: Optional[Transaction] = None,
     ):
-        if transaction is None:
-            transaction = Transaction(
+        if txn is None:
+            txn = Transaction(
                 created_at=self._get_now_in_seconds(),
                 state=TransactionState.COMMITTED)
-            self._transactions[transaction.created_at] = transaction
-        created_at = transaction.created_at
+            self._transactions[txn.created_at] = txn
+        created_at = txn.created_at
 
         # insert
         if key not in self._database:
