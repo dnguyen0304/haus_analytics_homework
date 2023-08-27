@@ -146,12 +146,12 @@ class Server:
 
     @implicit_transaction
     def delete(self, key: str, *, txn_id: float):
-        if key not in self._database:
+        if not self._database[key]:
             raise KeyError('key "{}" not found'.format(key))
 
         prev_record = self._get_record(key, txn_id=txn_id)
         if prev_record is None:
-            return
+            raise KeyError('key "{}" not found'.format(key))
         record = Record(
             data=prev_record.data,
             transaction_min=prev_record.transaction_min,
