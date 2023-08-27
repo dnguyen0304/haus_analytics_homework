@@ -88,12 +88,13 @@ class Server:
         self._get_now_in_seconds = _get_now_in_seconds
 
     def get(self, key: str, txn: Optional[Transaction] = None) -> Optional[str]:
-        record = self._get_record(key, txn)
+        record = self._get_record(key, txn=txn)
         return record.data if record else None
 
     def _get_record(
         self,
         key: str,
+        *,
         txn: Optional[Transaction] = None,
     ) -> Optional[Record]:
         if not self._database[key]:
@@ -113,6 +114,7 @@ class Server:
         self,
         key: str,
         value: str,
+        *,
         txn: Optional[Transaction] = None,
     ):
         # TODO(duy): Extract to a decorator.
@@ -130,7 +132,7 @@ class Server:
         )
         self._database[key].append(record)
 
-    def delete(self, key: str, txn: Optional[Transaction] = None):
+    def delete(self, key: str, *, txn: Optional[Transaction] = None):
         # TODO(duy): Extract to a decorator.
         if txn is None:
             txn = Transaction(
@@ -141,7 +143,7 @@ class Server:
         if key not in self._database:
             raise KeyError('key "{}" not found'.format(key))
 
-        prev_record = self._get_record(key, txn)
+        prev_record = self._get_record(key, txn=txn)
         record = Record(
             data=prev_record.data,
             transaction_min=prev_record.transaction_min,
