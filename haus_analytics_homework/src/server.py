@@ -60,6 +60,8 @@ class Transaction:
     def is_visible(self, curr_created_at: float) -> bool:
         if self.state == TransactionState.ABORTED:
             return False
+        if self.state == TransactionState.ABORTED_FAILED:
+            return False
         within_txn = self.created_at == curr_created_at
         is_visible = (
             self.state == TransactionState.COMMITTED
@@ -90,6 +92,19 @@ def implicit_transaction(func):
     return inner
 
 
+def post_transaction(func):
+    def inner(*args, **kwargs):
+        self = args[0]
+        txn_id = kwargs.get('txn_id', '')
+        try:
+            return func(*args, **kwargs)
+        except:
+            if txn_id:
+                self._transactions[txn_id].state = TransactionState.ABORTED_FAILED
+            raise
+    return inner
+
+
 class Server:
 
     def __init__(
@@ -105,10 +120,12 @@ class Server:
         self._transactions = transactions if transactions is not None else {}
         self._get_now_in_seconds = _get_now_in_seconds
 
+    @post_transaction
     def get(self, key: str, txn_id: Optional[float] = None) -> Optional[str]:
         record = self.get_record(key, txn_id=txn_id)
         return record.value if record else None
 
+    @post_transaction
     def get_record(
         self,
         key: str,
@@ -129,6 +146,7 @@ class Server:
         return None
 
     @implicit_transaction
+    @post_transaction
     def put(
         self,
         key: str,
@@ -145,6 +163,7 @@ class Server:
         self._database[key].append(record)
 
     @implicit_transaction
+    @post_transaction
     def delete(self, key: str, *, txn_id: float):
         if not self._database[key]:
             raise KeyError('key "{}" not found'.format(key))

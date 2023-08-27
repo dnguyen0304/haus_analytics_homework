@@ -344,42 +344,21 @@ class TestIntegration:
         bob_record = server.get_record(key_2, txn_id=bob)
         assert bob_record is None
 
-    def test_failed(self):
-        pass
-        # server = server_lib.Server()
-        # key = 'name'
-        # value = 'alice'
+    def test_failed_delete(self):
+        server = server_lib.Server()
+        key = 'name'
+        value = 'alice'
 
-        # # All users can see committed inserts.
-        # server.put(key, value)
-        # record = server.get_record(key)
-        # assert record is not None
-        # assert record.value == value
+        # No users can see failed writes.
+        alice = server.start_transaction()
+        server.put(key, value, txn_id=alice)
+        try:
+            server.delete('not_found', txn_id=alice)
+        except KeyError:
+            pass
 
-        # # Users can see their own uncommitted updates.
-        # alice = server.start_transaction()
-        # server.put(key, updated, txn_id=alice)
+        bob = server.start_transaction()
+        bob_record = server.get(key, txn_id=bob)
+        assert bob_record is None
 
-        # alice_record = server.get_record(key, txn_id=alice)
-        # assert alice_record is not None
-        # assert alice_record.value == updated
-        # assert alice_record.transaction_min == alice
-
-        # # Other users cannot see uncommitted updates.
-        # bob = server.start_transaction()
-        # bob_record = server.get_record(key, txn_id=bob)
-        # assert bob_record is not None
-        # assert bob_record.value == value
-        # assert bob_record.transaction_min != alice
-
-        # # All users can see committed updates.
-        # server.commit_transaction(txn_id=alice)
-
-        # record = server.get_record(key)
-        # assert record is not None
-        # assert record.value == updated
-        # assert record.transaction_min == alice
-        # pass
-        # # No users can see failed writes.
-
-        # # reuse aborted or failed or committed transaction
+        assert server._transactions[alice].state == server_lib.TransactionState.ABORTED_FAILED
