@@ -179,9 +179,22 @@ class TestServer:
         with pytest.raises(LookupError):
             self.server.rollback_transaction(txn_id)
 
-    def test_rollback_transaction_bad_state(self):
+    @pytest.mark.parametrize(
+        'state',
+        [
+            (server_lib.TransactionState.COMMITTED),
+            (server_lib.TransactionState.ABORTED),
+            (server_lib.TransactionState.ABORTED_FAILED),
+        ],
+        ids=[
+            'committed',
+            'aborted',
+            'aborted_failed',
+        ],
+    )
+    def test_rollback_transaction_bad_state(self, state):
         txn_id = self.server.start_transaction()
-        self.server._transactions[txn_id].state = server_lib.TransactionState.ABORTED
+        self.server._transactions[txn_id].state = state
 
         with pytest.raises(ValueError):
             self.server.rollback_transaction(txn_id)
