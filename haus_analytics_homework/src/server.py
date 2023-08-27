@@ -9,15 +9,15 @@ class Record:
     def __init__(
         self,
         data: str,
-        transaction_min: int,
-        transaction_max: int,
+        transaction_min: float,
+        transaction_max: float,
     ):
         self.data = data
         self.transaction_min = transaction_min
         self.transaction_max = transaction_max
 
     @classmethod
-    def for_insert(cls, data: str, transaction_min: int):
+    def for_insert(cls, data: str, transaction_min: float):
         return cls(data, transaction_min, 0)
 
     def __repr__(self):
@@ -136,6 +136,7 @@ class Server:
         txn_id: Optional[float] = None,
     ):
         # insert
+        # TODO(duy): Change to Record.for_insert.
         record = Record(
             data=value,
             transaction_min=txn_id,
