@@ -43,8 +43,8 @@ class Transaction:
     def __init__(
         self,
         state: TransactionState,
-        transaction_id: Optional[int],
-        created_at: Optional[int],
+        transaction_id: Optional[int] = None,
+        created_at: Optional[int] = None,
         _get_uuid: Callable[[], None] = uuid.uuid4,
         _get_now_in_seconds: Callable[[], None] = time.time,
     ):
