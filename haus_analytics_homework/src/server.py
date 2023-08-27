@@ -157,3 +157,6 @@ class Server:
             state=TransactionState.ACTIVE)
         self._transactions[txn.created_at] = txn
         return txn.created_at
+
+    def commit_transaction(self, txn_id: float):
+        self._transactions[txn_id].state = TransactionState.COMMITTED

@@ -148,8 +148,19 @@ class TestServer:
 
         assert txn_id == created_at
 
-    # def test_commit_transaction(self):
-    #     pass
+    def test_commit_transaction(self):
+        created_at = 12345.0
+        self.set_up_get_now(created_at)
 
-    # def test_commit_transaction_not_found(self):
-    #     pass
+        txn_id = self.server.start_transaction()
+        self.server.commit_transaction(txn_id)
+
+        assert txn_id in self.server._transactions
+        txn = self.server._transactions[txn_id]
+        assert txn.state == server_lib.TransactionState.COMMITTED
+
+    def test_commit_transaction_not_found(self):
+        txn_id = 12345.0
+
+        with pytest.raises(KeyError):
+            self.server.commit_transaction(txn_id)
