@@ -136,13 +136,12 @@ class Server:
         txn_id: float,
     ):
         # insert
-        # TODO(duy): Change to Record.for_insert.
-        record = Record(
-            data=value,
-            transaction_min=txn_id,
-            transaction_max=0,  # TODO(duy): Not yet implemented.
-        )
-        self._database[key].append(record)
+        if not self._database[key]:
+            record = Record.for_insert(data=value, transaction_min=txn_id)
+            self._database[key].append(record)
+        # update
+        else:
+            pass
 
     @implicit_transaction
     def delete(self, key: str, *, txn_id: float):
