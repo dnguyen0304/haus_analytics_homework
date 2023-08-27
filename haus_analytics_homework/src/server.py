@@ -12,25 +12,25 @@ class Record:
 
     def __init__(
         self,
-        data: str,
+        value: str,
         transaction_min: float,
         transaction_max: float,
     ):
-        self.data = data
+        self.value = value
         self.transaction_min = transaction_min
         self.transaction_max = transaction_max
 
     @classmethod
-    def for_insert(cls, data: str, transaction_min: float):
-        return cls(data, transaction_min, 0)
+    def for_insert(cls, value: str, transaction_min: float):
+        return cls(value, transaction_min, 0)
 
     def __repr__(self):
         repr_ = ('{}('
-                 'data="{}", '
+                 'value="{}", '
                  'transaction_min={}, '
                  'transaction_max={})')
         return repr_.format(self.__class__.__name__,
-                            self.data,
+                            self.value,
                             self.transaction_min,
                             self.transaction_max)
 
@@ -108,7 +108,7 @@ class Server:
 
     def get(self, key: str, txn_id: Optional[float] = None) -> Optional[str]:
         record = self.get_record(key, txn_id=txn_id)
-        return record.data if record else None
+        return record.value if record else None
 
     def get_record(
         self,
@@ -142,7 +142,7 @@ class Server:
         if prev_record:
             self.delete(key, txn_id=txn_id)
         # insert
-        record = Record.for_insert(data=value, transaction_min=txn_id)
+        record = Record.for_insert(value=value, transaction_min=txn_id)
         self._database[key].append(record)
 
     @implicit_transaction
@@ -154,7 +154,7 @@ class Server:
         if prev_record is None:
             raise KeyError('key "{}" not found'.format(key))
         record = Record(
-            data=prev_record.data,
+            value=prev_record.value,
             transaction_min=prev_record.transaction_min,
             transaction_max=txn_id,
         )

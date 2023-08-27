@@ -7,7 +7,7 @@ from .. import server as server_lib
 FOUND_KEY: str = 'found_key'
 FOUND_VALUE: str = 'found_value'
 EXISTING_RECORD: server_lib.Record = server_lib.Record(
-    data=FOUND_VALUE,
+    value=FOUND_VALUE,
     transaction_min=0.0,
     transaction_max=0.0,
 )
@@ -16,12 +16,12 @@ EXISTING_RECORD: server_lib.Record = server_lib.Record(
 class TestRecord:
 
     def test_for_insert(self):
-        data = 'foo'
+        value = 'foo'
         transaction_min = 123
 
-        record = server_lib.Record.for_insert(data, transaction_min)
+        record = server_lib.Record.for_insert(value, transaction_min)
 
-        assert record.data == data
+        assert record.value == value
         assert record.transaction_min == transaction_min
         assert record.transaction_max == 0
 
@@ -186,7 +186,7 @@ class TestServer:
 class TestIntegration:
 
     def setup_method(self, method):
-        pass
+        self.server = server_lib.Server()
 
     def test_committed(self):
         pass
