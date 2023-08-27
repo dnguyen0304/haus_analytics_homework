@@ -167,18 +167,14 @@ class Server:
         return txn.created_at
 
     def commit_transaction(self, txn_id: float):
-        txn = self._transactions.get(txn_id, None)
-        if txn is None:
-            raise LookupError('transaction ID {} not found'.format(txn_id))
-        if txn.state != TransactionState.ACTIVE:
-            raise ValueError('expected state for transaction ID {} to be {} but actually {}'.format(
-                txn_id,
-                TransactionState.ACTIVE,
-                txn.state,
-            ))
+        txn = self._validate_transaction_state(txn_id)
         txn.state = TransactionState.COMMITTED
 
     def rollback_transaction(self, txn_id: float):
+        txn = self._validate_transaction_state(txn_id)
+        txn.state = TransactionState.ABORTED
+
+    def _validate_transaction_state(self, txn_id: float):
         txn = self._transactions.get(txn_id, None)
         if txn is None:
             raise LookupError('transaction ID {} not found'.format(txn_id))
@@ -188,4 +184,4 @@ class Server:
                 TransactionState.ACTIVE,
                 txn.state,
             ))
-        txn.state = TransactionState.ABORTED
+        return txn
