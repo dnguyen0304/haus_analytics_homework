@@ -57,15 +57,12 @@ class Transaction:
             else _get_now_in_seconds())
         self.state = state
 
-    def has_inserted(self, curr_created_at: float) -> bool:
-        return (
-            self.state == TransactionState.COMMITTED
-            and self.created_at <= curr_created_at)
-
-    def has_deleted(self, curr_created_at: float) -> bool:
-        return (
+    def is_visible(self, curr_created_at: float) -> bool:
+        within_txn = self.created_at == curr_created_at
+        is_visible = (
             self.state == TransactionState.COMMITTED
             and self.created_at < curr_created_at)
+        return within_txn or is_visible
 
     def __repr__(self):
         repr_ = ('{}(created_at={}, state={})')
@@ -122,9 +119,9 @@ class Server:
         for record in reversed(self._database[key]):
             delete_txn = self._transactions.get(record.transaction_max, None)
             insert_txn = self._transactions[record.transaction_min]
-            if delete_txn and delete_txn.has_deleted(curr_created_at):
+            if delete_txn and delete_txn.is_visible(curr_created_at):
                 return None
-            if not insert_txn.has_inserted(curr_created_at):
+            if not insert_txn.is_visible(curr_created_at):
                 continue
             return record
         return None
