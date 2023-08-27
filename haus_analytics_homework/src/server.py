@@ -90,6 +90,9 @@ class Server:
             return None
         created_at = txn.created_at if txn is not None else float('inf')
         for record in reversed(self._database[key]):
+            delete_txn = self._transactions.get(record.transaction_max, None)
+            if delete_txn and delete_txn.state == TransactionState.COMMITTED and delete_txn.created_at < created_at:
+                return None
             insert_txn = self._transactions[record.transaction_min]
             if insert_txn.state != TransactionState.COMMITTED:
                 continue
@@ -104,20 +107,36 @@ class Server:
         value: str,
         txn: Optional[Transaction] = None,
     ):
+        # TODO(duy): Extract to a decorator.
         if txn is None:
             txn = Transaction(
                 created_at=self._get_now_in_seconds(),
                 state=TransactionState.COMMITTED)
             self._transactions[txn.created_at] = txn
-        created_at = txn.created_at
 
         # insert
         record = Record(
             data=value,
-            transaction_min=created_at,
+            transaction_min=txn.created_at,
             transaction_max=0,  # TODO(duy): Not yet implemented.
         )
         self._database[key].append(record)
 
-    def delete(self, key: str):
-        del self._database[key]
+    def delete(self, key: str, txn: Optional[Transaction] = None):
+        # TODO(duy): Extract to a decorator.
+        if txn is None:
+            txn = Transaction(
+                created_at=self._get_now_in_seconds(),
+                state=TransactionState.COMMITTED)
+            self._transactions[txn.created_at] = txn
+
+        if key not in self._database:
+            raise KeyError('key "{}" not found'.format(key))
+
+        prev_record = self._get_record(key, txn)
+        record = Record(
+            data=prev_record.data,
+            transaction_min=prev_record.transaction_min,
+            transaction_max=txn.created_at,
+        )
+        self._database[key].append(record)
