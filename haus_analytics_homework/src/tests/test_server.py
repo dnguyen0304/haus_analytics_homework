@@ -24,6 +24,13 @@ class TestRecord:
         assert record.transaction_max == 0
 
 
+class TestTransaction:
+
+    def test_state(self):
+        transaction = server.Transaction()
+        assert transaction.state == server.TransactionState.ACTIVE
+
+
 class TestServer:
 
     def setup_method(self, method):
