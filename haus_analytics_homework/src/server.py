@@ -254,8 +254,7 @@ class WebServer:
 
     def handler(self, client_socket, client_address):
         session = {
-            txn_id: None,
-            output: {},
+            'txn_id': None,
         }
 
         while True:
@@ -264,35 +263,44 @@ class WebServer:
                 break
             decoded = raw_data.decode(self.ENCODING)
             request = self.parse(decoded)
-
-            output = {}
+            session['output'] = {}
 
             if not request or request.command not in COMMANDS:
-                output['status'] = 'Error'
-                output['mesg'] = 'invalid request "{}"'.format(decoded)
+                session['output']['status'] = 'Error'
+                session['output']['mesg'] = 'invalid request "{}"'.format(decoded)
             else:
                 try:
                     if request.command == 'GET':
-                        result = self.server.get(request.key)
-                        if result:
-                            output['status'] = 'Ok'
-                            output['result'] = str(result)
-                        else:
-                            output['status'] = 'Error'
-                            output['mesg'] = 'key "{}" not found'.format(request.key)
+                        self.do_get(session, request)
                     if request.command == 'PUT':
-                        self.server.put(request.key, request.value)
-                        output['status'] = 'Ok'
+                        self.do_put(session, request)
                     if request.command == 'DELETE':
-                        self.server.delete(request.key)
-                        output['status'] = 'Ok'
+                        self.do_delete(session, request)
                 except Exception as error:
-                    output['status'] = 'Error'
-                    output['mesg'] = str(error)
+                    session['output']['status'] = 'Error'
+                    session['output']['mesg'] = error
 
-            stringified = json.dumps(output, indent=2) + '\n'
+            stringified = json.dumps(session['output'], indent=2) + '\n'
             encoded = stringified.encode(self.ENCODING)
             client_socket.send(encoded)
+
+    def do_get(self, session, request):
+        result = self.server.get(request.key)
+        if result:
+            session['output']['status'] = 'Ok'
+            session['output']['result'] = result
+        else:
+            # TODO(duy): Change from returning None to raising KeyError.
+            session['output']['status'] = 'Error'
+            session['output']['mesg'] = 'key "{}" not found'.format(request.key)
+
+    def do_put(self, session, request):
+        self.server.put(request.key, request.value)
+        session['output']['status'] = 'Ok'
+
+    def do_delete(self, session, request):
+        self.server.delete(request.key)
+        session['output']['status'] = 'Ok'
 
     @staticmethod
     def parse(request: str) -> Optional[Request]:
