@@ -87,8 +87,28 @@ def implicit_transaction(func):
 
         result = func(*args, **kwargs)
 
-        self.commit_transaction(txn_id)
+        self.commit_transaction(txn_id=txn_id)
         return result
+    return inner
+
+
+def pre_transaction(func):
+    def inner(*args, **kwargs):
+        self = args[0]
+        txn_id = kwargs.get('txn_id', '')
+        # This never occurs and is only for type checking.
+        if not txn_id:
+            raise ValueError('missing "txn_id" argument')
+        txn = self._transactions.get(txn_id, None)
+        if txn is None:
+            raise LookupError('transaction ID {} not found'.format(txn_id))
+        if txn.state != TransactionState.ACTIVE:
+            raise ValueError('expected state for transaction ID {} to be {} but actually {}'.format(
+                txn_id,
+                TransactionState.ACTIVE,
+                txn.state,
+            ))
+        return func(*args, **kwargs)
     return inner
 
 
@@ -121,19 +141,16 @@ class Server:
         self._get_now_in_seconds = _get_now_in_seconds
 
     @implicit_transaction
+    @pre_transaction
     @post_transaction
     def get(self, key: str, *, txn_id: float) -> Optional[str]:
         record = self.get_record(key, txn_id=txn_id)
         return record.value if record else None
 
     @implicit_transaction
+    @pre_transaction
     @post_transaction
-    def get_record(
-        self,
-        key: str,
-        *,
-        txn_id: float,
-    ) -> Optional[Record]:
+    def get_record(self, key: str, *, txn_id: float) -> Optional[Record]:
         if not self._database[key]:
             return None
         for record in reversed(self._database[key]):
@@ -147,14 +164,9 @@ class Server:
         return None
 
     @implicit_transaction
+    @pre_transaction
     @post_transaction
-    def put(
-        self,
-        key: str,
-        value: str,
-        *,
-        txn_id: float,
-    ):
+    def put(self, key: str, value: str, *, txn_id: float):
         prev_record = self.get_record(key, txn_id=txn_id)
         # update
         if prev_record:
@@ -164,6 +176,7 @@ class Server:
         self._database[key].append(record)
 
     @implicit_transaction
+    @pre_transaction
     @post_transaction
     def delete(self, key: str, *, txn_id: float):
         if not self._database[key]:
@@ -186,22 +199,18 @@ class Server:
         self._transactions[txn.created_at] = txn
         return txn.created_at
 
-    def commit_transaction(self, txn_id: float):
-        txn = self._validate_transaction_state(txn_id)
+    @pre_transaction
+    def commit_transaction(self, *, txn_id: float):
+        txn = self._transactions.get(txn_id, None)
+        # This never occurs and is only for type checking.
+        if txn is None:
+            return
         txn.state = TransactionState.COMMITTED
 
-    def rollback_transaction(self, txn_id: float):
-        txn = self._validate_transaction_state(txn_id)
-        txn.state = TransactionState.ABORTED
-
-    def _validate_transaction_state(self, txn_id: float):
+    @pre_transaction
+    def rollback_transaction(self, *, txn_id: float):
         txn = self._transactions.get(txn_id, None)
+        # This never occurs and is only for type checking.
         if txn is None:
-            raise LookupError('transaction ID {} not found'.format(txn_id))
-        if txn.state != TransactionState.ACTIVE:
-            raise ValueError('expected state for transaction ID {} to be {} but actually {}'.format(
-                txn_id,
-                TransactionState.ACTIVE,
-                txn.state,
-            ))
-        return txn
+            return
+        txn.state = TransactionState.ABORTED

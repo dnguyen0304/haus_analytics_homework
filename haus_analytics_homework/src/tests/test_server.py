@@ -130,7 +130,7 @@ class TestServer:
         self.set_up_get_now(created_at)
 
         txn_id = self.server.start_transaction()
-        self.server.commit_transaction(txn_id)
+        self.server.commit_transaction(txn_id=txn_id)
 
         assert txn_id in self.server._transactions
         txn = self.server._transactions[txn_id]
@@ -140,7 +140,7 @@ class TestServer:
         txn_id = 12345.0
 
         with pytest.raises(LookupError):
-            self.server.commit_transaction(txn_id)
+            self.server.commit_transaction(txn_id=txn_id)
 
     @pytest.mark.parametrize(
         'state',
@@ -167,7 +167,7 @@ class TestServer:
         self.set_up_get_now(created_at)
 
         txn_id = self.server.start_transaction()
-        self.server.rollback_transaction(txn_id)
+        self.server.rollback_transaction(txn_id=txn_id)
 
         assert txn_id in self.server._transactions
         txn = self.server._transactions[txn_id]
@@ -177,7 +177,7 @@ class TestServer:
         txn_id = 12345.0
 
         with pytest.raises(LookupError):
-            self.server.rollback_transaction(txn_id)
+            self.server.rollback_transaction(txn_id=txn_id)
 
     @pytest.mark.parametrize(
         'state',
@@ -328,13 +328,8 @@ class TestIntegration:
         # No users can see aborted writes.
         server.rollback_transaction(txn_id=alice)
 
-        alice_record = server.get_record(key_1, txn_id=alice)
-        assert alice_record is not None
-        assert alice_record.value == value_1
-        assert alice_record.transaction_min != alice
-
-        alice_record = server.get_record(key_2, txn_id=alice)
-        assert alice_record is None
+        with pytest.raises(ValueError):
+            server.get_record(key_1, txn_id=alice)
 
         bob_record = server.get_record(key_1, txn_id=bob)
         assert bob_record is not None
