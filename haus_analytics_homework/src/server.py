@@ -2,7 +2,6 @@ import collections
 import enum
 import time
 from typing import Callable, Dict, Optional
-import uuid
 
 
 class Record:
@@ -39,25 +38,18 @@ class TransactionState(enum.Enum):
     ABORTED = 2
 
 
-def _get_uuid() -> str:
-    return str(uuid.uuid4())
+def _get_now_in_seconds() -> int:
+    return int(time.time())
 
 
 class Transaction:
 
     def __init__(
         self,
-        transaction_id: Optional[str] = None,
         created_at: Optional[float] = None,
         state: TransactionState = TransactionState.ACTIVE,
-        _get_uuid: Callable[[], str] = _get_uuid,
-        _get_now_in_seconds: Callable[[], None] = time.time,
+        _get_now_in_seconds: Callable[[], int] = _get_now_in_seconds,
     ):
-        self.transaction_id = (
-            transaction_id
-            if transaction_id is not None
-            else _get_uuid()
-        )
         self.created_at = (
             created_at
             if created_at is not None
@@ -66,12 +58,8 @@ class Transaction:
         self.state = state
 
     def __repr__(self):
-        repr_ = ('{}('
-                 'transaction_id="{}", '
-                 'created_at={}, '
-                 'state={})')
+        repr_ = ('{}(created_at={}, state={})')
         return repr_.format(self.__class__.__name__,
-                            self.transaction_id,
                             self.created_at,
                             self.state)
 
