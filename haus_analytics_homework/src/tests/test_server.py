@@ -139,7 +139,27 @@ class TestServer:
     def test_commit_transaction_not_found(self):
         txn_id = 12345.0
 
-        with pytest.raises(KeyError):
+        with pytest.raises(LookupError):
+            self.server.commit_transaction(txn_id)
+
+    @pytest.mark.parametrize(
+        'state',
+        [
+            (server_lib.TransactionState.COMMITTED),
+            (server_lib.TransactionState.ABORTED),
+            (server_lib.TransactionState.ABORTED_FAILED),
+        ],
+        ids=[
+            'committed',
+            'aborted',
+            'aborted_failed',
+        ],
+    )
+    def test_commit_transaction_bad_state(self, state):
+        txn_id = self.server.start_transaction()
+        self.server._transactions[txn_id].state = state
+
+        with pytest.raises(ValueError):
             self.server.commit_transaction(txn_id)
 
     def test_rollback_transaction(self):
