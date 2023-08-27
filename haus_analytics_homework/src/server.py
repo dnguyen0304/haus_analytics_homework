@@ -39,8 +39,8 @@ class TransactionState(enum.Enum):
     FAILED = 3
 
 
-def _get_now_in_seconds() -> int:
-    return int(time.time())
+def _get_now_in_seconds() -> float:
+    return time.time()
 
 
 class Transaction:
@@ -49,7 +49,7 @@ class Transaction:
         self,
         created_at: Optional[float] = None,
         state: TransactionState = TransactionState.ACTIVE,
-        _get_now_in_seconds: Callable[[], int] = _get_now_in_seconds,
+        _get_now_in_seconds: Callable[[], float] = _get_now_in_seconds,
     ):
         self.created_at = (
             created_at
@@ -75,13 +75,30 @@ class Transaction:
                             self.state)
 
 
+def implicit_transaction(func):
+    def inner(*args, **kwargs):
+        is_implicit = 'txn_id' not in kwargs
+        if not is_implicit:
+            return func(*args, **kwargs)
+
+        self = args[0]
+        txn_id = self.start_transaction()
+        kwargs['txn_id'] = txn_id
+
+        result = func(*args, **kwargs)
+
+        self.commit_transaction(txn_id)
+        return result
+    return inner
+
+
 class Server:
 
     def __init__(
         self,
         database: collections.defaultdict[str, List[Record]],
         transactions: Optional[Dict[str, Transaction]] = None,
-        _get_now_in_seconds: Callable[[], int] = _get_now_in_seconds,
+        _get_now_in_seconds: Callable[[], float] = _get_now_in_seconds,
     ):
         self._database = database
         self._transactions = transactions if transactions is not None else {}
@@ -110,6 +127,7 @@ class Server:
             return record
         return None
 
+    @implicit_transaction
     def put(
         self,
         key: str,
@@ -117,14 +135,6 @@ class Server:
         *,
         txn_id: Optional[float] = None,
     ):
-        # TODO(duy): Extract to a decorator.
-        if txn_id is None:
-            txn = Transaction(
-                created_at=self._get_now_in_seconds(),
-                state=TransactionState.COMMITTED)
-            self._transactions[txn.created_at] = txn
-            txn_id = txn.created_at
-
         # insert
         record = Record(
             data=value,
@@ -133,15 +143,8 @@ class Server:
         )
         self._database[key].append(record)
 
+    @implicit_transaction
     def delete(self, key: str, *, txn_id: Optional[float] = None):
-        # TODO(duy): Extract to a decorator.
-        if txn_id is None:
-            txn = Transaction(
-                created_at=self._get_now_in_seconds(),
-                state=TransactionState.COMMITTED)
-            self._transactions[txn.created_at] = txn
-            txn_id = txn.created_at
-
         if key not in self._database:
             raise KeyError('key "{}" not found'.format(key))
 
