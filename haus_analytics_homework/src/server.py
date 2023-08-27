@@ -36,6 +36,7 @@ class TransactionState(enum.Enum):
     ACTIVE = 0
     COMMITTED = 1
     ABORTED = 2
+    FAILED = 3
 
 
 def _get_now_in_seconds() -> int:
