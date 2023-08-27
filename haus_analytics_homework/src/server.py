@@ -167,3 +167,6 @@ class Server:
 
     def commit_transaction(self, txn_id: float):
         self._transactions[txn_id].state = TransactionState.COMMITTED
+
+    def rollback_transaction(self, txn_id: float):
+        self._transactions[txn_id].state = TransactionState.ABORTED

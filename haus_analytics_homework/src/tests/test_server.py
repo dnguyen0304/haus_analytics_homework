@@ -164,3 +164,20 @@ class TestServer:
 
         with pytest.raises(KeyError):
             self.server.commit_transaction(txn_id)
+
+    def test_rollback_transaction(self):
+        created_at = 12345.0
+        self.set_up_get_now(created_at)
+
+        txn_id = self.server.start_transaction()
+        self.server.rollback_transaction(txn_id)
+
+        assert txn_id in self.server._transactions
+        txn = self.server._transactions[txn_id]
+        assert txn.state == server_lib.TransactionState.ABORTED
+
+    def test_rollback_transaction_not_found(self):
+        txn_id = 12345.0
+
+        with pytest.raises(KeyError):
+            self.server.rollback_transaction(txn_id)
