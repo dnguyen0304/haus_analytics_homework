@@ -84,6 +84,12 @@ class TestServer:
     def setup_method(self, method):
         self.server = server_lib.Server(database=collections.defaultdict(list))
 
+    def set_up_get_now(self, created_at: float):
+        _get_now_in_seconds = lambda: created_at
+        self.server = server_lib.Server(
+            database=collections.defaultdict(list),
+            _get_now_in_seconds=_get_now_in_seconds)
+
     def test_get_does_not_exist(self):
         key = 'does_not_exist'
 
@@ -100,18 +106,14 @@ class TestServer:
     def test_put_key_insert_no_transaction(self):
         key = 'does_not_exist'
         value = 'foo'
+        created_at = 12345.0
+        self.set_up_get_now(created_at)
 
-        created_at = 12345
-        _get_now_in_seconds = lambda: created_at
-        server = server_lib.Server(
-            database=collections.defaultdict(list),
-            _get_now_in_seconds=_get_now_in_seconds)
+        self.server.put(key, value)
 
-        server.put(key, value)
-
-        assert server.get(key) == value
-        assert created_at in server._transactions
-        txn = server._transactions[created_at]
+        assert self.server.get(key) == value
+        assert created_at in self.server._transactions
+        txn = self.server._transactions[created_at]
         assert txn.created_at == created_at
         assert txn.state == server_lib.TransactionState.COMMITTED
 
@@ -140,11 +142,14 @@ class TestServer:
 
     def test_start_transaction(self):
         created_at = 12345.0
-        _get_now_in_seconds = lambda: created_at
-        server = server_lib.Server(
-            database=collections.defaultdict(list),
-            _get_now_in_seconds=_get_now_in_seconds)
+        self.set_up_get_now(created_at)
 
-        txn_id = server.start_transaction()
+        txn_id = self.server.start_transaction()
 
         assert txn_id == created_at
+
+    # def test_commit_transaction(self):
+    #     pass
+
+    # def test_commit_transaction_not_found(self):
+    #     pass
