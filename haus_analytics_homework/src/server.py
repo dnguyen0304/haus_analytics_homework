@@ -77,8 +77,13 @@ class Transaction:
 
 class Server:
 
-    def __init__(self, database: Dict[str, Record]):
+    def __init__(
+        self,
+        database: Dict[str, Record],
+        transactions: Optional[Dict[str, Transaction]] = None,
+    ):
         self._database = database
+        self._transactions = transactions if transactions is not None else {}
 
     def get(self, key: str) -> Optional[str]:
         return self._database[key].data
