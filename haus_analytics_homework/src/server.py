@@ -70,19 +70,33 @@ class Server:
         self,
         database: Dict[str, Record],
         transactions: Optional[Dict[str, Transaction]] = None,
+        _get_now_in_seconds: Callable[[], int] = _get_now_in_seconds,
     ):
         self._database = database
         self._transactions = transactions if transactions is not None else {}
+        self._get_now_in_seconds = _get_now_in_seconds
 
     def get(self, key: str) -> str:
         return self._database[key].data
 
-    def put(self, key: str, value: str):
+    def put(
+        self,
+        key: str,
+        value: str,
+        transaction: Optional[Transaction] = None,
+    ):
+        if transaction is None:
+            transaction = Transaction(
+                created_at=self._get_now_in_seconds(),
+                state=TransactionState.COMMITTED)
+            self._transactions[transaction.created_at] = transaction
+        created_at = transaction.created_at
+
         # insert
         if key not in self._database:
             record = Record(
                 data=value,
-                transaction_min=0,  # TODO(duy): Not yet implemented.
+                transaction_min=created_at,
                 transaction_max=0,  # TODO(duy): Not yet implemented.
             )
             self._database[key] = record
