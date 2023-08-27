@@ -56,19 +56,26 @@ class TestTransaction:
         assert transaction.has_inserted(curr_created_at) is expected
 
     @pytest.mark.parametrize(
-        'curr_created_at, expected',
+        'state, curr_created_at, expected',
         [
-            (0, False),
-            (5, False),
-            (10, True),
+            (server_lib.TransactionState.ACTIVE, 0, False),
+            (server_lib.TransactionState.ACTIVE, 5, False),
+            (server_lib.TransactionState.ACTIVE, 10, False),
+            (server_lib.TransactionState.COMMITTED, 0, False),
+            (server_lib.TransactionState.COMMITTED, 5, False),
+            (server_lib.TransactionState.COMMITTED, 10, True),
         ],
-        ids=['less_than', 'equal', 'greater_than']
+        ids=[
+            'active_less_than',
+            'active_equal',
+            'active_greater_than',
+            'committed_less_than',
+            'committed_equal',
+            'committed_greater_than',
+        ],
     )
-    def test_has_deleted(self, curr_created_at, expected):
-        transaction = server_lib.Transaction(
-            created_at=5,
-            state=server_lib.TransactionState.COMMITTED,
-        )
+    def test_has_deleted(self, state, curr_created_at, expected):
+        transaction = server_lib.Transaction(created_at=5, state=state)
         assert transaction.has_deleted(curr_created_at) is expected
 
 
