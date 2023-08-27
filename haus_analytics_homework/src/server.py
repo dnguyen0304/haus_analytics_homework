@@ -145,7 +145,7 @@ class Server:
         self._database[key].append(record)
 
     @implicit_transaction
-    def delete(self, key: str, *, txn_id: Optional[float] = None):
+    def delete(self, key: str, *, txn_id: float):
         if key not in self._database:
             raise KeyError('key "{}" not found'.format(key))
 
