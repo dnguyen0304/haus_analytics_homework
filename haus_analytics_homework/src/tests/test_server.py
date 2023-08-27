@@ -167,10 +167,10 @@ class TestIntegration:
         key = 'name'
         value = 'alice'
 
+        # Other users cannot see uncommitted inserts.
         alice = server.start_transaction()
         server.put(key, value, txn_id=alice)
 
-        # Other users cannot see uncommitted inserts.
         bob = server.start_transaction()
         bob_record = server.get_record(key, txn_id=bob)
         assert bob_record is None
@@ -194,9 +194,8 @@ class TestIntegration:
         key = 'name'
         value = 'alice'
 
-        server.put(key, value)
-
         # All users can see committed inserts.
+        server.put(key, value)
         record = server.get_record(key)
         assert record is not None
         assert record.value == value
@@ -226,14 +225,13 @@ class TestIntegration:
         value = 'alice'
         updated = 'alice_updated'
 
-        server.put(key, value)
-
         # All users can see committed inserts.
+        server.put(key, value)
         record = server.get_record(key)
         assert record is not None
         assert record.value == value
 
-        # User can see their own uncommitted updates.
+        # Users can see their own uncommitted updates.
         alice = server.start_transaction()
         server.put(key, updated, txn_id=alice)
 
@@ -258,7 +256,53 @@ class TestIntegration:
         assert record.transaction_min == alice
 
     def test_aborted(self):
-        pass
+        server = server_lib.Server()
+        key_1 = 'name_1'
+        key_2 = 'name_2'
+        value_1 = 'alice'
+        value_2 = 'bob'
+        updated = 'alice_updated'
+
+        # All users can see committed inserts.
+        server.put(key_1, value_1)
+        record = server.get_record(key_1)
+        assert record is not None
+        assert record.value == value_1
+
+        # Other users cannot see uncommitted writes.
+        alice = server.start_transaction()
+        server.put(key_1, updated, txn_id=alice)
+        server.put(key_2, value_2, txn_id=alice)
+        server.delete(key_1, txn_id=alice)
+
+        bob = server.start_transaction()
+
+        bob_record = server.get_record(key_1, txn_id=bob)
+        assert bob_record is not None
+        assert bob_record.value == value_1
+        assert bob_record.transaction_min != alice
+
+        bob_record = server.get_record(key_2, txn_id=bob)
+        assert bob_record is None
+
+        # No users can see aborted writes.
+        server.rollback_transaction(txn_id=alice)
+
+        alice_record = server.get_record(key_1, txn_id=alice)
+        assert alice_record is not None
+        assert alice_record.value == value_1
+        assert alice_record.transaction_min != alice
+
+        alice_record = server.get_record(key_2, txn_id=alice)
+        assert alice_record is None
+
+        bob_record = server.get_record(key_1, txn_id=bob)
+        assert bob_record is not None
+        assert bob_record.value == value_1
+        assert bob_record.transaction_min != alice
+
+        bob_record = server.get_record(key_2, txn_id=bob)
+        assert bob_record is None
 
     def test_failed(self):
         pass

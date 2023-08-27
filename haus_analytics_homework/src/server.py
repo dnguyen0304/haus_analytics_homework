@@ -58,6 +58,8 @@ class Transaction:
         self.state = state
 
     def is_visible(self, curr_created_at: float) -> bool:
+        if self.state == TransactionState.ABORTED:
+            return False
         within_txn = self.created_at == curr_created_at
         is_visible = (
             self.state == TransactionState.COMMITTED
