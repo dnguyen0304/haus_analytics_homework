@@ -62,7 +62,7 @@ class Transaction:
 
     def __repr__(self):
         repr_ = ('{}('
-                 'transaction_id={}, '
+                 'transaction_id="{}", '
                  'created_at={}, '
                  'state={})')
         return repr_.format(self.__class__.__name__,
