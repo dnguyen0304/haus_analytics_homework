@@ -97,7 +97,7 @@ class Server:
     def __init__(
         self,
         database: collections.defaultdict[str, List[Record]],
-        transactions: Optional[Dict[str, Transaction]] = None,
+        transactions: Optional[Dict[float, Transaction]] = None,
         _get_now_in_seconds: Callable[[], float] = _get_now_in_seconds,
     ):
         self._database = database
