@@ -1,10 +1,10 @@
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 
 class Record:
     def __init__(
         self,
-        data: Any,
+        data: str,
         transaction_min: int,
         transaction_max: int,
     ):
@@ -13,12 +13,12 @@ class Record:
         self.transaction_max = transaction_max
 
     @classmethod
-    def for_insert(cls, data: Any, transaction_min: int):
+    def for_insert(cls, data: str, transaction_min: int):
         return cls(data, transaction_min, 0)
 
     def __repr__(self):
         repr_ = ('{}('
-                 'data={}, '
+                 'data="{}", '
                  'transaction_min={}, '
                  'transaction_max={})')
         return repr_.format(self.__class__.__name__,
