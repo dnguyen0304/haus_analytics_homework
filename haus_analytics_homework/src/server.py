@@ -40,7 +40,7 @@ class TransactionState(enum.Enum):
     ACTIVE = 0
     COMMITTED = 1
     ABORTED = 2
-    FAILED = 3
+    ABORTED_FAILED = 3
 
 
 class Transaction:
