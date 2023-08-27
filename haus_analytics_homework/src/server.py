@@ -1,3 +1,4 @@
+import asyncio
 import collections
 import enum
 import json
@@ -344,7 +345,7 @@ class WebServer:
         return Request(command=command, key=key, value=value)
 
 
-if __name__ == '__main__':
+def main_blocking():
     web_server = WebServer()
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
@@ -355,3 +356,24 @@ if __name__ == '__main__':
         while True:
             client_socket, client_address = server.accept()
             web_server.handler(client_socket, client_address)
+
+
+async def handler(reader, writer):
+    request = None
+    while request != 'quit':
+        raw_data = await reader.read(1024)
+        decoded = raw_data.decode('utf-8')
+        response = 'you sent ' + decoded.rstrip('\n') + '\n'
+        writer.write(response.encode('utf-8'))
+        await writer.drain()
+    writer.close()
+
+
+async def main():
+    server = await asyncio.start_server(handler, 'localhost', 5000)
+    async with server:
+        await server.serve_forever()
+
+
+if __name__ == '__main__':
+    asyncio.run(main())
