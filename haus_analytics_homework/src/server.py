@@ -1,7 +1,9 @@
 import collections
 import enum
+import json
+import socket
 import time
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Set
 
 
 def _get_now_in_seconds() -> float:
@@ -77,7 +79,7 @@ class Transaction:
 
 def implicit_transaction(func):
     def inner(*args, **kwargs):
-        is_implicit = 'txn_id' not in kwargs
+        is_implicit = 'txn_id' not in kwargs or not kwargs['txn_id']
         if not is_implicit:
             return func(*args, **kwargs)
 
@@ -214,3 +216,111 @@ class Server:
         if txn is None:
             return
         txn.state = TransactionState.ABORTED
+
+
+DELIMITER: str = ' '
+COMMANDS: Set[str] = {
+    'GET',
+    'PUT',
+    'DELETE',
+}
+
+
+class Request:
+
+    def __init__(self, command: str, key: str, value: str):
+        self.command = command
+        self.key = key
+        self.value = value
+
+    def __repr__(self):
+        repr_ = ('{}('
+                 'command="{}", '
+                 'key="{}", '
+                 'value="{}")')
+        return repr_.format(self.__class__.__name__,
+                            self.command,
+                            self.key,
+                            self.value)
+
+
+class WebServer:
+
+    ENCODING = 'utf-8'
+
+    def __init__(self, server=None):
+        self.server = server if server else Server()
+        self.server.put('intro', 'Hello, World!')
+
+    def handler(self, client_socket, client_address):
+        session = {
+            txn_id: None,
+            output: {},
+        }
+
+        while True:
+            raw_data = client_socket.recv(1024)
+            if not raw_data:
+                break
+            decoded = raw_data.decode(self.ENCODING)
+            request = self.parse(decoded)
+
+            output = {}
+
+            if not request or request.command not in COMMANDS:
+                output['status'] = 'Error'
+                output['mesg'] = 'invalid request "{}"'.format(decoded)
+            else:
+                try:
+                    if request.command == 'GET':
+                        result = self.server.get(request.key)
+                        if result:
+                            output['status'] = 'Ok'
+                            output['result'] = str(result)
+                        else:
+                            output['status'] = 'Error'
+                            output['mesg'] = 'key "{}" not found'.format(request.key)
+                    if request.command == 'PUT':
+                        self.server.put(request.key, request.value)
+                        output['status'] = 'Ok'
+                    if request.command == 'DELETE':
+                        self.server.delete(request.key)
+                        output['status'] = 'Ok'
+                except Exception as error:
+                    output['status'] = 'Error'
+                    output['mesg'] = str(error)
+
+            stringified = json.dumps(output, indent=2) + '\n'
+            encoded = stringified.encode(self.ENCODING)
+            client_socket.send(encoded)
+
+    @staticmethod
+    def parse(request: str) -> Optional[Request]:
+        stripped = request.rstrip('\n')
+        if not stripped:
+            raise ValueError('no arguments specified')
+        arguments = stripped.split(DELIMITER, maxsplit=2)
+        command = arguments[0]
+        key, value = '', ''
+        if len(arguments) > 1:
+            key = arguments[1]
+        if len(arguments) > 2:
+            value = arguments[2]
+        if command == 'PUT' and not value:
+            return None
+        if command == 'DELETE' and not key:
+            return None
+        return Request(command=command, key=key, value=value)
+
+
+if __name__ == '__main__':
+    web_server = WebServer()
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server.bind(('127.0.0.1', 5000))
+        server.listen(5)
+
+        while True:
+            client_socket, client_address = server.accept()
+            web_server.handler(client_socket, client_address)
