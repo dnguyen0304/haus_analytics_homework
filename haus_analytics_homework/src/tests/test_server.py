@@ -82,7 +82,7 @@ class TestTransaction:
 class TestServer:
 
     def setup_method(self, method):
-        self.server = server_lib.Server(database=collections.defaultdict(list))
+        self.server = server_lib.Server()
 
     def set_up_get_now(self, created_at: float):
         _get_now_in_seconds = lambda: created_at
@@ -184,6 +184,9 @@ class TestServer:
 
 
 class TestIntegration:
+
+    def setup_method(self, method):
+        pass
 
     def test_committed(self):
         pass

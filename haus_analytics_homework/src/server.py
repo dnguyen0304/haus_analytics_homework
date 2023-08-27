@@ -107,10 +107,10 @@ class Server:
         self._get_now_in_seconds = _get_now_in_seconds
 
     def get(self, key: str, txn_id: Optional[float] = None) -> Optional[str]:
-        record = self._get_record(key, txn_id=txn_id)
+        record = self.get_record(key, txn_id=txn_id)
         return record.data if record else None
 
-    def _get_record(
+    def get_record(
         self,
         key: str,
         *,
@@ -137,7 +137,7 @@ class Server:
         *,
         txn_id: float,
     ):
-        prev_record = self._get_record(key, txn_id=txn_id)
+        prev_record = self.get_record(key, txn_id=txn_id)
         # update
         if prev_record:
             self.delete(key, txn_id=txn_id)
@@ -150,7 +150,7 @@ class Server:
         if not self._database[key]:
             raise KeyError('key "{}" not found'.format(key))
 
-        prev_record = self._get_record(key, txn_id=txn_id)
+        prev_record = self.get_record(key, txn_id=txn_id)
         if prev_record is None:
             raise KeyError('key "{}" not found'.format(key))
         record = Record(
