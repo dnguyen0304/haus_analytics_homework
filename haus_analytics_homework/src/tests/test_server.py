@@ -36,6 +36,22 @@ class TestTransaction:
         'curr_created_at, expected',
         [
             (0, False),
+            (5, True),
+            (10, True),
+        ],
+        ids=['less_than', 'equal', 'greater_than']
+    )
+    def test_has_inserted(self, curr_created_at, expected):
+        transaction = server_lib.Transaction(
+            created_at=5,
+            state=server_lib.TransactionState.COMMITTED,
+        )
+        assert transaction.has_inserted(curr_created_at) is expected
+
+    @pytest.mark.parametrize(
+        'curr_created_at, expected',
+        [
+            (0, False),
             (5, False),
             (10, True),
         ],

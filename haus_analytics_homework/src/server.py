@@ -58,7 +58,12 @@ class Transaction:
         )
         self.state = state
 
-    def has_deleted(self, curr_created_at: int):
+    def has_inserted(self, curr_created_at: float) -> bool:
+        return (
+            self.state == TransactionState.COMMITTED
+            and self.created_at <= curr_created_at)
+
+    def has_deleted(self, curr_created_at: float) -> bool:
         return (
             self.state == TransactionState.COMMITTED
             and self.created_at < curr_created_at)
@@ -96,12 +101,10 @@ class Server:
         curr_created_at = txn.created_at if txn is not None else float('inf')
         for record in reversed(self._database[key]):
             delete_txn = self._transactions.get(record.transaction_max, None)
+            insert_txn = self._transactions[record.transaction_min]
             if delete_txn and delete_txn.has_deleted(curr_created_at):
                 return None
-            insert_txn = self._transactions[record.transaction_min]
-            if insert_txn.state != TransactionState.COMMITTED:
-                continue
-            if record.transaction_min > curr_created_at:
+            if not insert_txn.has_inserted(curr_created_at):
                 continue
             return record
         return None
