@@ -98,9 +98,8 @@ def pre_transaction(func):
     def inner(*args, **kwargs):
         self = args[0]
         txn_id = kwargs.get('txn_id', '')
-        # This never occurs and is only for type checking.
         if not txn_id:
-            raise ValueError('missing "txn_id" argument')
+            raise ValueError('no active transaction')
         txn = self._transactions.get(txn_id, None)
         if txn is None:
             raise LookupError('transaction ID {} not found'.format(txn_id))
@@ -223,6 +222,9 @@ COMMANDS: Set[str] = {
     'GET',
     'PUT',
     'DELETE',
+    'START',
+    'COMMIT',
+    'ROLLBACK',
 }
 
 
@@ -276,16 +278,22 @@ class WebServer:
                         self.do_put(session, request)
                     if request.command == 'DELETE':
                         self.do_delete(session, request)
+                    if request.command == 'START':
+                        self.do_start_transaction(session, request)
+                    if request.command == 'COMMIT':
+                        self.do_commit_transaction(session, request)
+                    if request.command == 'ROLLBACK':
+                        self.do_rollback_transaction(session, request)
                 except Exception as error:
                     session['output']['status'] = 'Error'
-                    session['output']['mesg'] = error
+                    session['output']['mesg'] = str(error)
 
             stringified = json.dumps(session['output'], indent=2) + '\n'
             encoded = stringified.encode(self.ENCODING)
             client_socket.send(encoded)
 
     def do_get(self, session, request):
-        result = self.server.get(request.key)
+        result = self.server.get(request.key, txn_id=session['txn_id'])
         if result:
             session['output']['status'] = 'Ok'
             session['output']['result'] = result
@@ -295,12 +303,27 @@ class WebServer:
             session['output']['mesg'] = 'key "{}" not found'.format(request.key)
 
     def do_put(self, session, request):
-        self.server.put(request.key, request.value)
+        self.server.put(request.key, request.value, txn_id=session['txn_id'])
         session['output']['status'] = 'Ok'
 
     def do_delete(self, session, request):
-        self.server.delete(request.key)
+        self.server.delete(request.key, txn_id=session['txn_id'])
         session['output']['status'] = 'Ok'
+
+    def do_start_transaction(self, session, request):
+        txn_id = self.server.start_transaction()
+        session['output']['status'] = 'Ok'
+        session['txn_id'] = txn_id
+
+    def do_commit_transaction(self, session, request):
+        txn_id = self.server.commit_transaction(txn_id=session['txn_id'])
+        session['output']['status'] = 'Ok'
+        session['txn_id'] = None
+
+    def do_rollback_transaction(self, session, request):
+        txn_id = self.server.rollback_transaction(txn_id=session['txn_id'])
+        session['output']['status'] = 'Ok'
+        session['txn_id'] = None
 
     @staticmethod
     def parse(request: str) -> Optional[Request]:
