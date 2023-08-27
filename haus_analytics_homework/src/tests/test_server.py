@@ -175,7 +175,7 @@ class TestIntegration:
         bob_record = server.get_record(key, txn_id=bob)
         assert bob_record is None
 
-        # User can see their own uncommitted inserts.
+        # Users can see their own uncommitted inserts.
         alice_record = server.get_record(key, txn_id=alice)
         assert alice_record is not None
         assert alice_record.value == value
@@ -189,19 +189,19 @@ class TestIntegration:
         assert record.value == value
         assert record.transaction_min == alice
 
-    def test_update(self):
+    def test_delete(self):
         server = server_lib.Server()
         key = 'name'
         value = 'alice'
 
         server.put(key, value)
 
-        # All users can see committed writes.
+        # All users can see committed inserts.
         record = server.get_record(key)
         assert record is not None
         assert record.value == value
 
-        # User can see their own uncommitted deletes.
+        # Users can see their own uncommitted deletes.
         alice = server.start_transaction()
         server.delete(key, txn_id=alice)
 
@@ -219,6 +219,43 @@ class TestIntegration:
 
         record = server.get_record(key)
         assert record is None
+
+    def test_update(self):
+        server = server_lib.Server()
+        key = 'name'
+        value = 'alice'
+        updated = 'alice_updated'
+
+        server.put(key, value)
+
+        # All users can see committed inserts.
+        record = server.get_record(key)
+        assert record is not None
+        assert record.value == value
+
+        # User can see their own uncommitted updates.
+        alice = server.start_transaction()
+        server.put(key, updated, txn_id=alice)
+
+        alice_record = server.get_record(key, txn_id=alice)
+        assert alice_record is not None
+        assert alice_record.value == updated
+        assert alice_record.transaction_min == alice
+
+        # Other users cannot see uncommitted updates.
+        bob = server.start_transaction()
+        bob_record = server.get_record(key, txn_id=bob)
+        assert bob_record is not None
+        assert bob_record.value == value
+        assert bob_record.transaction_min != alice
+
+        # All users can see committed updates.
+        server.commit_transaction(txn_id=alice)
+
+        record = server.get_record(key)
+        assert record is not None
+        assert record.value == updated
+        assert record.transaction_min == alice
 
     def test_aborted(self):
         pass
