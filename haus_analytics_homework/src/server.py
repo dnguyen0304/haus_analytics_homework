@@ -87,19 +87,19 @@ class Server:
         self._transactions = transactions if transactions is not None else {}
         self._get_now_in_seconds = _get_now_in_seconds
 
-    def get(self, key: str, txn: Optional[Transaction] = None) -> Optional[str]:
-        record = self._get_record(key, txn=txn)
+    def get(self, key: str, txn_id: Optional[float] = None) -> Optional[str]:
+        record = self._get_record(key, txn_id=txn_id)
         return record.data if record else None
 
     def _get_record(
         self,
         key: str,
         *,
-        txn: Optional[Transaction] = None,
+        txn_id: Optional[float] = None,
     ) -> Optional[Record]:
         if not self._database[key]:
             return None
-        curr_created_at = txn.created_at if txn is not None else float('inf')
+        curr_created_at = txn_id if txn_id is not None else float('inf')
         for record in reversed(self._database[key]):
             delete_txn = self._transactions.get(record.transaction_max, None)
             insert_txn = self._transactions[record.transaction_min]
@@ -115,39 +115,41 @@ class Server:
         key: str,
         value: str,
         *,
-        txn: Optional[Transaction] = None,
+        txn_id: Optional[float] = None,
     ):
         # TODO(duy): Extract to a decorator.
-        if txn is None:
+        if txn_id is None:
             txn = Transaction(
                 created_at=self._get_now_in_seconds(),
                 state=TransactionState.COMMITTED)
             self._transactions[txn.created_at] = txn
+            txn_id = txn.created_at
 
         # insert
         record = Record(
             data=value,
-            transaction_min=txn.created_at,
+            transaction_min=txn_id,
             transaction_max=0,  # TODO(duy): Not yet implemented.
         )
         self._database[key].append(record)
 
-    def delete(self, key: str, *, txn: Optional[Transaction] = None):
+    def delete(self, key: str, *, txn_id: Optional[float] = None):
         # TODO(duy): Extract to a decorator.
-        if txn is None:
+        if txn_id is None:
             txn = Transaction(
                 created_at=self._get_now_in_seconds(),
                 state=TransactionState.COMMITTED)
             self._transactions[txn.created_at] = txn
+            txn_id = txn.created_at
 
         if key not in self._database:
             raise KeyError('key "{}" not found'.format(key))
 
-        prev_record = self._get_record(key, txn=txn)
+        prev_record = self._get_record(key, txn_id=txn_id)
         record = Record(
             data=prev_record.data,
             transaction_min=prev_record.transaction_min,
-            transaction_max=txn.created_at,
+            transaction_max=txn_id,
         )
         self._database[key].append(record)
 
