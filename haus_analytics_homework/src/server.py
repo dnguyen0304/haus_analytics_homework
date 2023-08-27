@@ -1,3 +1,4 @@
+import collections
 import enum
 import time
 from typing import Callable, Dict, Optional
@@ -85,7 +86,7 @@ class Server:
         self._database = database
         self._transactions = transactions if transactions is not None else {}
 
-    def get(self, key: str) -> Optional[str]:
+    def get(self, key: str) -> str:
         return self._database[key].data
 
     def put(self, key: str, value: str):
