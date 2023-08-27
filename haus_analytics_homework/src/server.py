@@ -1,7 +1,9 @@
+import enum
 from typing import Dict, Optional
 
 
 class Record:
+
     def __init__(
         self,
         data: str,
@@ -25,6 +27,36 @@ class Record:
                             self.data,
                             self.transaction_min,
                             self.transaction_max)
+
+
+# See: https://www.sqlshack.com/sql-server-transaction-overview/
+class TransactionState(enum.Enum):
+    ACTIVE = 0
+    COMMITTED = 1
+    ABORTED = 2
+
+
+class Transaction:
+
+    def __init__(
+        self,
+        transaction_id: int,
+        created_at: int,
+        state: TransactionState,
+    ):
+        self.transaction_id = transaction_id
+        self.created_at = created_at
+        self.state = state
+
+    def __repr__(self):
+        repr_ = ('{}('
+                 'transaction_id={}, '
+                 'created_at={}, '
+                 'state={})')
+        return repr_.format(self.__class__.__name__,
+                            self.transaction_id,
+                            self.created_at,
+                            self.state)
 
 
 class Server:
