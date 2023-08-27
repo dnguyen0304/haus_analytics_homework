@@ -156,7 +156,14 @@ class TestServer:
     def test_rollback_transaction_not_found(self):
         txn_id = 12345.0
 
-        with pytest.raises(KeyError):
+        with pytest.raises(LookupError):
+            self.server.rollback_transaction(txn_id)
+
+    def test_rollback_transaction_bad_state(self):
+        txn_id = self.server.start_transaction()
+        self.server._transactions[txn_id].state = server_lib.TransactionState.ABORTED
+
+        with pytest.raises(ValueError):
             self.server.rollback_transaction(txn_id)
 
 
@@ -306,3 +313,40 @@ class TestIntegration:
 
     def test_failed(self):
         pass
+        # server = server_lib.Server()
+        # key = 'name'
+        # value = 'alice'
+
+        # # All users can see committed inserts.
+        # server.put(key, value)
+        # record = server.get_record(key)
+        # assert record is not None
+        # assert record.value == value
+
+        # # Users can see their own uncommitted updates.
+        # alice = server.start_transaction()
+        # server.put(key, updated, txn_id=alice)
+
+        # alice_record = server.get_record(key, txn_id=alice)
+        # assert alice_record is not None
+        # assert alice_record.value == updated
+        # assert alice_record.transaction_min == alice
+
+        # # Other users cannot see uncommitted updates.
+        # bob = server.start_transaction()
+        # bob_record = server.get_record(key, txn_id=bob)
+        # assert bob_record is not None
+        # assert bob_record.value == value
+        # assert bob_record.transaction_min != alice
+
+        # # All users can see committed updates.
+        # server.commit_transaction(txn_id=alice)
+
+        # record = server.get_record(key)
+        # assert record is not None
+        # assert record.value == updated
+        # assert record.transaction_min == alice
+        # pass
+        # # No users can see failed writes.
+
+        # # reuse aborted or failed or committed transaction
