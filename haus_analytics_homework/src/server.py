@@ -38,6 +38,10 @@ class TransactionState(enum.Enum):
     ABORTED = 2
 
 
+def _get_uuid() -> str:
+    return str(uuid.uuid4())
+
+
 class Transaction:
 
     def __init__(
@@ -45,7 +49,7 @@ class Transaction:
         transaction_id: Optional[int] = None,
         created_at: Optional[int] = None,
         state: TransactionState = TransactionState.ACTIVE,
-        _get_uuid: Callable[[], None] = uuid.uuid4,
+        _get_uuid: Callable[[], str] = _get_uuid,
         _get_now_in_seconds: Callable[[], None] = time.time,
     ):
         self.transaction_id = (
