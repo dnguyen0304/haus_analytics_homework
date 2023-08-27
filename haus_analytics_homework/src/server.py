@@ -120,27 +120,28 @@ class Server:
         self._transactions = transactions if transactions is not None else {}
         self._get_now_in_seconds = _get_now_in_seconds
 
+    @implicit_transaction
     @post_transaction
-    def get(self, key: str, txn_id: Optional[float] = None) -> Optional[str]:
+    def get(self, key: str, *, txn_id: float) -> Optional[str]:
         record = self.get_record(key, txn_id=txn_id)
         return record.value if record else None
 
+    @implicit_transaction
     @post_transaction
     def get_record(
         self,
         key: str,
         *,
-        txn_id: Optional[float] = None,
+        txn_id: float,
     ) -> Optional[Record]:
         if not self._database[key]:
             return None
-        curr_created_at = txn_id if txn_id is not None else float('inf')
         for record in reversed(self._database[key]):
             delete_txn = self._transactions.get(record.transaction_max, None)
             insert_txn = self._transactions[record.transaction_min]
-            if delete_txn and delete_txn.is_visible(curr_created_at):
+            if delete_txn and delete_txn.is_visible(txn_id):
                 return None
-            if not insert_txn.is_visible(curr_created_at):
+            if not insert_txn.is_visible(txn_id):
                 continue
             return record
         return None
