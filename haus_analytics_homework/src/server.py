@@ -4,6 +4,10 @@ import time
 from typing import Callable, Dict, List, Optional
 
 
+def _get_now_in_seconds() -> float:
+    return time.time()
+
+
 class Record:
 
     def __init__(
@@ -37,10 +41,6 @@ class TransactionState(enum.Enum):
     COMMITTED = 1
     ABORTED = 2
     FAILED = 3
-
-
-def _get_now_in_seconds() -> float:
-    return time.time()
 
 
 class Transaction:
