@@ -29,14 +29,24 @@ class Record:
 
 class Server:
 
-    def __init__(self, database: Dict[str, str]):
+    def __init__(self, database: Dict[str, Record]):
         self._database = database
 
     def get(self, key: str) -> Optional[str]:
-        return self._database[key]
+        return self._database[key].data
 
     def put(self, key: str, value: str):
-        self._database[key] = value
+        # insert
+        if key not in self._database:
+            record = Record(
+                data=value,
+                transaction_min=0,  # TODO(duy): Not yet implemented.
+                transaction_max=0,  # TODO(duy): Not yet implemented.
+            )
+            self._database[key] = record
+        # update
+        else:
+            self._database[key].data = value
 
     def delete(self, key: str):
         del self._database[key]

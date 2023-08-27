@@ -4,6 +4,11 @@ from .. import server
 
 EXISTING_KEY: str = 'exist'
 EXISTING_VALUE: str = ''
+EXISTING_RECORD: server.Record = server.Record(
+    data=EXISTING_VALUE,
+    transaction_min=0,
+    transaction_max=0,
+)
 
 
 class TestRecord:
@@ -22,7 +27,7 @@ class TestRecord:
 class TestServer:
 
     def setup_method(self, method):
-        self.server = server.Server(database={EXISTING_KEY: EXISTING_VALUE})
+        self.server = server.Server(database={EXISTING_KEY: EXISTING_RECORD})
 
     def test_get_does_not_exist(self):
         key = 'does_not_exist'
