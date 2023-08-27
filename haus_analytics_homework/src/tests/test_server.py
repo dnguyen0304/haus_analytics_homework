@@ -6,6 +6,19 @@ EXISTING_KEY: str = 'exist'
 EXISTING_VALUE: str = ''
 
 
+class TestRecord:
+
+    def test_for_insert(self):
+        data = 'foo'
+        transaction_min = 123
+
+        record = server.Record.for_insert(data, transaction_min)
+
+        assert record.data == data
+        assert record.transaction_min == transaction_min
+        assert record.transaction_max == 0
+
+
 class TestServer:
 
     def setup_method(self, method):
