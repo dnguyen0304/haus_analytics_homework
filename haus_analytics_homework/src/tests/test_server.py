@@ -165,8 +165,30 @@ class TestIntegration:
     def setup_method(self, method):
         self.server = server_lib.Server()
 
-    def test_committed(self):
-        pass
+    def test_insert(self):
+        key = 'name'
+        value = 'alice'
+
+        alice = self.server.start_transaction()
+        self.server.put(key, value, txn_id=alice)
+
+        # Other users cannot see uncommitted writes.
+        bob_record = self.server.get_record(key)
+        assert bob_record is None
+
+        # User can see their own uncommitted writes.
+        alice_record = self.server.get_record(key, txn_id=alice)
+        assert alice_record is not None
+        assert alice_record.value == value
+        assert alice_record.transaction_min == alice
+
+        # All users can see committed writes.
+        self.server.commit_transaction(txn_id=alice)
+
+        record = self.server.get_record(key)
+        assert record is not None
+        assert record.value == value
+        assert record.transaction_min == alice
 
     def test_aborted(self):
         pass
