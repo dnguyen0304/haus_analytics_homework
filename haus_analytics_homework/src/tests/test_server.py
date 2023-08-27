@@ -32,6 +32,22 @@ class TestTransaction:
         transaction = server_lib.Transaction()
         assert transaction.state == server_lib.TransactionState.ACTIVE
 
+    @pytest.mark.parametrize(
+        'curr_created_at, expected',
+        [
+            (0, False),
+            (5, False),
+            (10, True),
+        ],
+        ids=['less_than', 'equal', 'greater_than']
+    )
+    def test_has_deleted(self, curr_created_at, expected):
+        transaction = server_lib.Transaction(
+            created_at=5,
+            state=server_lib.TransactionState.COMMITTED,
+        )
+        assert transaction.has_deleted(curr_created_at) is expected
+
 
 class TestServer:
 

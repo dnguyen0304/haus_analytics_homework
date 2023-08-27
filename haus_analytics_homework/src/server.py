@@ -58,6 +58,11 @@ class Transaction:
         )
         self.state = state
 
+    def has_deleted(self, curr_created_at: int):
+        return (
+            self.state == TransactionState.COMMITTED
+            and self.created_at < curr_created_at)
+
     def __repr__(self):
         repr_ = ('{}(created_at={}, state={})')
         return repr_.format(self.__class__.__name__,
@@ -88,15 +93,15 @@ class Server:
     ) -> Optional[Record]:
         if not self._database[key]:
             return None
-        created_at = txn.created_at if txn is not None else float('inf')
+        curr_created_at = txn.created_at if txn is not None else float('inf')
         for record in reversed(self._database[key]):
             delete_txn = self._transactions.get(record.transaction_max, None)
-            if delete_txn and delete_txn.state == TransactionState.COMMITTED and delete_txn.created_at < created_at:
+            if delete_txn and delete_txn.has_deleted(curr_created_at):
                 return None
             insert_txn = self._transactions[record.transaction_min]
             if insert_txn.state != TransactionState.COMMITTED:
                 continue
-            if record.transaction_min > created_at:
+            if record.transaction_min > curr_created_at:
                 continue
             return record
         return None
