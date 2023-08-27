@@ -47,7 +47,7 @@ class Transaction:
     def __init__(
         self,
         transaction_id: Optional[str] = None,
-        created_at: Optional[int] = None,
+        created_at: Optional[float] = None,
         state: TransactionState = TransactionState.ACTIVE,
         _get_uuid: Callable[[], str] = _get_uuid,
         _get_now_in_seconds: Callable[[], None] = time.time,
