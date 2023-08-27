@@ -8,8 +8,8 @@ FOUND_KEY: str = 'found_key'
 FOUND_VALUE: str = 'found_value'
 EXISTING_RECORD: server_lib.Record = server_lib.Record(
     data=FOUND_VALUE,
-    transaction_min=0,
-    transaction_max=0,
+    transaction_min=0.0,
+    transaction_max=0.0,
 )
 
 
