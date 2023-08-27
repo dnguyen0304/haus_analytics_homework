@@ -1,5 +1,6 @@
 import enum
-from typing import Dict, Optional
+from typing import Callable, Dict, Optional
+import uuid
 
 
 class Record:
@@ -40,12 +41,22 @@ class Transaction:
 
     def __init__(
         self,
-        transaction_id: int,
-        created_at: int,
         state: TransactionState,
+        transaction_id: Optional[int],
+        created_at: Optional[int],
+        _get_uuid: Callable[[], None] = uuid.uuid4,
+        _get_now_in_seconds: Callable[[], None] = time.time,
     ):
-        self.transaction_id = transaction_id
-        self.created_at = created_at
+        self.transaction_id = (
+            transaction_id
+            if transaction_id is not None
+            else _get_uuid()
+        )
+        self.created_at = (
+            created_at
+            if created_at is not None
+            else _get_now_in_seconds()
+        )
         self.state = state
 
     def __repr__(self):
