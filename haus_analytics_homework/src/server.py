@@ -1,7 +1,7 @@
 import collections
 import enum
 import time
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, List, Optional
 
 
 class Record:
@@ -68,7 +68,7 @@ class Server:
 
     def __init__(
         self,
-        database: Dict[str, Record],
+        database: collections.defaultdict[str, List[Record]],
         transactions: Optional[Dict[str, Transaction]] = None,
         _get_now_in_seconds: Callable[[], int] = _get_now_in_seconds,
     ):
@@ -76,8 +76,18 @@ class Server:
         self._transactions = transactions if transactions is not None else {}
         self._get_now_in_seconds = _get_now_in_seconds
 
-    def get(self, key: str) -> str:
-        return self._database[key].data
+    def get(self, key: str, txn: Optional[Transaction] = None) -> Optional[str]:
+        if not self._database[key]:
+            return None
+        created_at = txn.created_at if txn is not None else float('inf')
+        for record in reversed(self._database[key]):
+            record_txn = self._transactions[record.transaction_min]
+            if record_txn.state != TransactionState.COMMITTED:
+                continue
+            if record.transaction_min > created_at:
+                continue
+            return record.data
+        return None
 
     def put(
         self,
@@ -93,16 +103,12 @@ class Server:
         created_at = txn.created_at
 
         # insert
-        if key not in self._database:
-            record = Record(
-                data=value,
-                transaction_min=created_at,
-                transaction_max=0,  # TODO(duy): Not yet implemented.
-            )
-            self._database[key] = record
-        # update
-        else:
-            self._database[key].data = value
+        record = Record(
+            data=value,
+            transaction_min=created_at,
+            transaction_max=0,  # TODO(duy): Not yet implemented.
+        )
+        self._database[key].append(record)
 
     def delete(self, key: str):
         del self._database[key]

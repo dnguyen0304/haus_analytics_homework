@@ -1,3 +1,5 @@
+import collections
+
 import pytest
 
 from .. import server as server_lib
@@ -34,17 +36,18 @@ class TestTransaction:
 class TestServer:
 
     def setup_method(self, method):
-        self.server = server_lib.Server(database={EXISTING_KEY: EXISTING_RECORD})
+        self.server = server_lib.Server(database=collections.defaultdict(list))
 
     def test_get_does_not_exist(self):
         key = 'does_not_exist'
 
-        with pytest.raises(KeyError):
-            self.server.get(key)
+        assert self.server.get(key) is None
 
     def test_get_exist(self):
         key = EXISTING_KEY
         value = EXISTING_VALUE
+
+        self.server.put(EXISTING_KEY, EXISTING_VALUE)
 
         assert self.server.get(key) == value
 
@@ -55,7 +58,7 @@ class TestServer:
         created_at = 12345
         _get_now_in_seconds = lambda: created_at
         server = server_lib.Server(
-            database={EXISTING_KEY: EXISTING_RECORD},
+            database=collections.defaultdict(list),
             _get_now_in_seconds=_get_now_in_seconds)
 
         server.put(key, value)
