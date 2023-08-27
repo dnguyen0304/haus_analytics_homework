@@ -150,6 +150,8 @@ class Server:
             raise KeyError('key "{}" not found'.format(key))
 
         prev_record = self._get_record(key, txn_id=txn_id)
+        if prev_record is None:
+            return
         record = Record(
             data=prev_record.data,
             transaction_min=prev_record.transaction_min,
