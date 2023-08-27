@@ -103,8 +103,8 @@ class TestServer:
 
         assert self.server.get(key) == value
 
-    def test_put_key_insert_no_transaction(self):
-        key = 'does_not_exist'
+    def test_put_key_insert_implicit_transaction(self):
+        key = 'not_found'
         value = 'foo'
         created_at = 12345.0
         self.set_up_get_now(created_at)

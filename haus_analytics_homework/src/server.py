@@ -135,13 +135,13 @@ class Server:
         *,
         txn_id: float,
     ):
-        # insert
-        if not self._database[key]:
-            record = Record.for_insert(data=value, transaction_min=txn_id)
-            self._database[key].append(record)
+        prev_record = self._get_record(key, txn_id=txn_id)
         # update
-        else:
-            pass
+        if prev_record:
+            self.delete(key, txn_id=txn_id)
+        # insert
+        record = Record.for_insert(data=value, transaction_min=txn_id)
+        self._database[key].append(record)
 
     @implicit_transaction
     def delete(self, key: str, *, txn_id: float):
